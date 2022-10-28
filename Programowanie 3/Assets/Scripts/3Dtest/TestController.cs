@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,21 +7,24 @@ public class TestController : MonoBehaviour
     CharacterController controller;
 
     Vector2 moveInput;
-    InputAction moveAction;
 
-    // Start is called before the first frame update
+    [SerializeField] float rotationSpeed = 10;
+    float horizontalRotInput;
+    //InputAction moveAction;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
         //moveAction = GetComponent<PlayerInput>().actions["Move"];
     }
 
-    // Update is called once per frame
     void Update()
     {
         //moveInput = moveAction.ReadValue<Vector2>();
         Vector3 moveDirection = new Vector3(moveInput.x, moveInput.y, 0);
         controller.Move(moveDirection * moveSpeed * Time.deltaTime);
+
+        transform.Rotate(0, horizontalRotInput * rotationSpeed * Time.deltaTime, 0);
     }
 
     public void OnJump(InputAction.CallbackContext context)
@@ -45,4 +46,10 @@ public class TestController : MonoBehaviour
     {
         moveInput = context.ReadValue<Vector2>();
     }
+
+    public void OnLook(InputAction.CallbackContext context)
+    {
+        horizontalRotInput = context.ReadValue<Vector2>().x;
+    }
+
 }

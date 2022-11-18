@@ -7,9 +7,11 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] float moveSpeed = 5;
     [SerializeField] float sprintSpeed = 8;
     [SerializeField] float crouchSpeed = 3;
+    [SerializeField] float acceleration = 10;
     [SerializeField] float jumpForce = 5;
+    float lastSpeed;
     float verticalVelocity;
-    MoveState moveState;
+    [SerializeField] MoveState moveState;
 
     [Header("Looking")]
     [SerializeField] Transform cam;
@@ -18,18 +20,43 @@ public class FirstPersonController : MonoBehaviour
     [SerializeField] float maxCameraRot = 70;
     float cameraPitch;
 
+    [Header("Crouching")]
+    [SerializeField] float crouchAmount = 1;
+    [SerializeField] float crouchTime = 0.3f;
+    [SerializeField] float crouchProgress;
+    bool wantToCrouch = false;
+
+    //Te zmienne ustawimy w Starcie
+    float standingHeight;
+    float crouchingHeight;
+    Vector3 standingCenter;
+    Vector3 crouchingCenter;
+    Vector3 standingCameraPosition;
+    Vector3 crouchingCameraPosition;
+
     Vector2 moveInput;
     Vector2 rotInput;
+    bool sprintPressed;
+    bool crouchPressed;
+
     CharacterController controller;
 
     void Start()
     {
+        Cursor.lockState = CursorLockMode.Locked;
         controller = GetComponent<CharacterController>();
+        standingHeight = controller.height;
+        crouchingHeight = standingHeight - crouchAmount;
+        standingCenter = controller.center;
+        crouchingCenter = standingCenter + Vector3.down * crouchAmount / 2;
+        standingCameraPosition = cam.localPosition;
+        crouchingCameraPosition = cam.localPosition + Vector3.down * crouchAmount;
     }
 
     void Update()
     {
         ApplyGravity();
+        UpdateCrouch();
         Move();
         BodyLook();
     }
@@ -61,16 +88,8 @@ public class FirstPersonController : MonoBehaviour
         Vector3 moveDirection = transform.right * moveInput.x + transform.forward * moveInput.y;
         float targetSpeed = GetMovementSpeed();
 
-        //float targetSpeed = sprinting ? sprintSpeed : moveSpeed;
-        //if(sprinting)
-        //{
-        //    targetSpeed = sprintSpeed;
-        //}
-        //else
-        //{
-        //    targetSpeed = moveSpeed;
-        //}
-        float currentSpeed = targetSpeed;
+        float currentSpeed = Mathf.MoveTowards(lastSpeed, targetSpeed, acceleration * Time.deltaTime);
+        lastSpeed = moveDirection.magnitude * currentSpeed;
         Vector3 moveVector = moveDirection * currentSpeed + Vector3.up * verticalVelocity;
         controller.Move(moveVector * Time.deltaTime);
     }
@@ -85,14 +104,13 @@ public class FirstPersonController : MonoBehaviour
         cameraPitch += rotInput.y * rotationSpeed * Time.deltaTime;
         cameraPitch = Mathf.Clamp(cameraPitch, -maxCameraRot, maxCameraRot);
         cam.localEulerAngles = new Vector3(cameraPitch, 0, 0);
-        //cam.localRotation = Quaternion.Euler(new Vector3(cameraPitch, 0, 0));
     }
 
     float GetMovementSpeed()
     {
         switch (moveState)
         {
-            case MoveState.Standing:
+            case MoveState.Walking:
                 return moveSpeed;
             case MoveState.Sprinting:
                 return sprintSpeed;
@@ -102,6 +120,42 @@ public class FirstPersonController : MonoBehaviour
                 return 0;
         }
     }
+
+    void UpdateCrouch()
+    {
+         if(wantToCrouch) //Kucamy
+        {
+            if (crouchProgress >= 1) // ca³kowite kucniêcie
+                return;
+
+            crouchProgress += Time.deltaTime / crouchTime;
+        }
+         else // Wstajemy
+        {
+            if (crouchProgress <= 0) // ca³kowite wstanie
+                return;
+
+            if(Physics.Raycast(transform.position,Vector3.up,standingHeight/2))
+            {
+                return;
+            }
+            crouchProgress -= Time.deltaTime / crouchTime;
+
+            if (crouchProgress <= 0)
+            {
+                if (sprintPressed)
+                    moveState = MoveState.Sprinting;
+                else
+                    moveState = MoveState.Walking;
+            }
+        }
+        controller.height = Mathf.Lerp(standingHeight,crouchingHeight,crouchProgress);
+        controller.center = Vector3.Lerp(standingCenter, crouchingCenter, crouchProgress);
+        cam.localPosition = Vector3.Lerp(standingCameraPosition, crouchingCameraPosition, crouchProgress);
+
+    }
+
+    #region Get Inputs
 
     public void OnMove(InputAction.CallbackContext context)
     {
@@ -129,11 +183,28 @@ public class FirstPersonController : MonoBehaviour
     {
         if(context.performed)
         {
-            moveState = MoveState.Sprinting;
+            sprintPressed = true;
+
+            wantToCrouch = false;
+            if(moveState != MoveState.Crouching)
+            {
+                moveState = MoveState.Sprinting;
+            }
+
         }
         if(context.canceled)
         {
-            moveState = MoveState.Standing;
+            sprintPressed = false;
+            if (moveState != MoveState.Sprinting)
+                return;
+
+            if (crouchPressed)
+            {
+                moveState = MoveState.Crouching;
+                wantToCrouch = true;
+            }
+            else
+            moveState = MoveState.Walking;
         }
     }
 
@@ -141,17 +212,21 @@ public class FirstPersonController : MonoBehaviour
     {
         if (context.performed)
         {
+            crouchPressed = true;
             moveState = MoveState.Crouching;
+            wantToCrouch = true;
         }
         if (context.canceled)
         {
-            moveState = MoveState.Standing;
+            crouchPressed = false;
+            wantToCrouch = false;
         }
     }
+    #endregion
 
     enum MoveState
     {
-        Standing,
+        Walking,
         Sprinting,
         Crouching
     }

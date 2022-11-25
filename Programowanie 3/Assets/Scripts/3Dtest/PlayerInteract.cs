@@ -10,6 +10,8 @@ public class PlayerInteract : MonoBehaviour
     [SerializeField] LayerMask interactionLayer;
     [SerializeField] float checkDistance = 2;
     [SerializeField] TMP_Text helpText;
+
+    IInteractable currentInteraction;
     PlayerInput input;
     InputAction useAction;
 
@@ -17,6 +19,7 @@ public class PlayerInteract : MonoBehaviour
     {
         input = GetComponent<PlayerInput>();
         useAction = input.actions["Use"];
+        helpText.gameObject.SetActive(false);
     }
 
     void Update()
@@ -27,6 +30,13 @@ public class PlayerInteract : MonoBehaviour
             IInteractable interactable;
             if(hit.collider.TryGetComponent<IInteractable>(out interactable))
             {
+                if(currentInteraction != interactable) // wczeœniej patrzyliœmy na inn¹ interakcjê (albo na nic)
+                {
+                    currentInteraction?.OnUnFocus(); 
+                    currentInteraction = interactable;
+                    currentInteraction.OnFocus();
+                }
+                
                 helpText.gameObject.SetActive(true);
                 helpText.text = string.Format("Press {0} to {1}",
                     useAction.GetBindingDisplayString(), interactable.GetUseText());
@@ -40,7 +50,13 @@ public class PlayerInteract : MonoBehaviour
         }
         else // nie patrzymy na ¿adn¹ interakcjê
         {
-            helpText.gameObject.SetActive(false);
+            if(currentInteraction != null)
+            {
+                currentInteraction.OnUnFocus();
+                helpText.gameObject.SetActive(false);
+                currentInteraction = null;
+            }
+
         }
 
     }

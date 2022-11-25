@@ -3,6 +3,8 @@ using UnityEngine.InputSystem;
 
 public class FirstPersonController : MonoBehaviour
 {
+    public static FirstPersonController instance;
+
     [Header("Movement")]
     [SerializeField] float moveSpeed = 5;
     [SerializeField] float sprintSpeed = 8;
@@ -40,6 +42,11 @@ public class FirstPersonController : MonoBehaviour
     bool crouchPressed;
 
     CharacterController controller;
+
+    private void Awake()
+    {
+        instance = this;
+    }
 
     void Start()
     {

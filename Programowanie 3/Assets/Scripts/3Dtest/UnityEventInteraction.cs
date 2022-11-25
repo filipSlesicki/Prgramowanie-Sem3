@@ -15,4 +15,14 @@ public class UnityEventInteraction : MonoBehaviour, IInteractable
     {
         useEvent.Invoke();
     }
+
+    public void OnFocus()
+    {
+        Debug.Log("Focus");
+    }
+
+    public void OnUnFocus()
+    {
+        Debug.Log("UnFocus");
+    }
 }

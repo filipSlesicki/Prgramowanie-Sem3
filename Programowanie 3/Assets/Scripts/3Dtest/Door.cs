@@ -14,6 +14,9 @@ public class Door : MonoBehaviour, IInteractable
 
     public void Use()
     {
+        Vector3 dirToPlayer = FirstPersonController.instance.transform.position - transform.position;
+        float dot = Vector3.Dot(transform.forward, dirToPlayer);
+        anim.SetFloat("Dot", dot);
         anim.SetTrigger("Open");
         isOpen = !isOpen;
     }
@@ -28,5 +31,15 @@ public class Door : MonoBehaviour, IInteractable
         {
             return "open";
         }
+    }
+
+    public void OnFocus()
+    {
+        Debug.Log("Focus");
+    }
+
+    public void OnUnFocus()
+    {
+        Debug.Log("UnFocus");
     }
 }

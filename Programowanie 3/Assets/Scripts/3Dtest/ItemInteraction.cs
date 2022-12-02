@@ -6,6 +6,7 @@ public class ItemInteraction : MonoBehaviour, IInteractable
 {
     [SerializeField] Material unfocusedMat;
     [SerializeField] Material focusedMat;
+    [SerializeField] Item item;
     MeshRenderer rend;
 
     void Start()
@@ -20,18 +21,20 @@ public class ItemInteraction : MonoBehaviour, IInteractable
 
     public void Use()
     {
+        FindObjectOfType<Inventory>().items.Add(item);
         Destroy(gameObject);
     }
 
     public void OnFocus()
     {
         rend.material = focusedMat;
-        Debug.Log("Focus");
     }
 
     public void OnUnFocus()
     {
-        rend.material = unfocusedMat;
-        Debug.Log("UnFocus");
+        if(rend)
+        {
+            rend.material = unfocusedMat;
+        }
     }
 }

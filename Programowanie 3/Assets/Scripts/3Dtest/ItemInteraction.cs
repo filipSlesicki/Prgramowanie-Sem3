@@ -21,7 +21,7 @@ public class ItemInteraction : MonoBehaviour, IInteractable
 
     public void Use()
     {
-        FindObjectOfType<Inventory>().items.Add(item);
+        FindObjectOfType<Inventory>().AddItem(item);
         Destroy(gameObject);
     }
 
